@@ -1,0 +1,59 @@
+{
+  "name": "vite-plugin-theme",
+  "version": "0.3.2",
+  "description": "Vite plugin for dynamically changing the theme color of the interface",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "es",
+    "CHANGELOG.md",
+    "README.md",
+    "README.zh_CN.md"
+  ],
+  "scripts": {
+    "clean": "rimraf dist && rimraf es",
+    "dev": " tsup src/index.ts --dts --format cjs,esm --watch",
+    "dev:client": "tsc -w --p tsconfig.client.json",
+    "build": "npm run clean  && tsup src/index.ts --dts --format cjs,esm && tsc -p tsconfig.client.json",
+    "prepublishOnly": "yarn build",
+    "log": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
+    "example:dev": "npm -C example run serve",
+    "example:build": "npm -C example run build"
+  },
+  "keywords": [
+    "vite"
+  ],
+  "author": "Vben",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vbenjs/vite-plugin-theme"
+  },
+  "bugs": {
+    "url": "https://github.com/vbenjs/vite-plugin-theme/issues"
+  },
+  "homepage": "https://github.com/vbenjs/vite-plugin-theme/tree/master/#readme",
+  "peerDependencies": {
+    "vite": ">=2.0.0-beta.49"
+  },
+  "devDependencies": {
+    "@types/es-module-lexer": "^0.3.0",
+    "@types/fs-extra": "^9.0.6",
+    "@types/node": "^14.14.22",
+    "conventional-changelog-cli": "^2.1.1",
+    "fs-extra": "^9.1.0",
+    "prettier": "^2.2.1",
+    "rimraf": "^3.0.2",
+    "tsup": "^3.12.1",
+    "typescript": "^4.1.3",
+    "vite": "^2.0.0-beta.62"
+  },
+  "dependencies": {
+    "@types/tinycolor2": "^1.4.2",
+    "clean-css": "^4.2.3",
+    "es-module-lexer": "^0.3.26",
+    "tinycolor2": "^1.4.2"
+  }
+}
