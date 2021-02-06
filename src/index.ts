@@ -62,6 +62,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
 
   const cssOutputName = `${fileName}.${createHash()}.css`;
 
+  let needSourcemap = false;
   return [
     injectClientPlugin(options, cssOutputName),
     {
@@ -72,11 +73,18 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
         config = resolvedConfig;
         isServer = resolvedConfig.command === 'serve';
         clientPath = JSON.stringify(path.posix.join(config.base, CLIENT_PUBLIC_PATH));
+        needSourcemap =
+          resolvedConfig.command === 'serve' ||
+          (resolvedConfig.isProduction && !!resolvedConfig.build.sourcemap);
       },
 
       async transform(code, id) {
+        const getMap = () => (needSourcemap ? this.getCombinedSourcemap() : null);
         if (!cssLangRE.test(id)) {
-          return code;
+          return {
+            code,
+            map: getMap(),
+          };
         }
 
         const clientCode = isServer
@@ -90,7 +98,10 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
             : extractVariable(clientCode, colorVariables, resolveSelectorFn);
 
         if (!extractCssCodeTemplate) {
-          return code;
+          return {
+            code,
+            map: getMap(),
+          };
         }
 
         // dev-server
@@ -103,7 +114,10 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
             code,
           ];
 
-          return retCode.join('\n');
+          return {
+            code: retCode.join('\n'),
+            map: getMap(),
+          };
         } else {
           if (!styleMap.has(id)) {
             extCssString += extractCssCodeTemplate;
@@ -111,7 +125,10 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
           styleMap.set(id, extractCssCodeTemplate);
         }
 
-        return code;
+        return {
+          code,
+          map: getMap(),
+        };
       },
 
       async writeBundle() {
@@ -133,6 +150,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
 function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): Plugin {
   let config: ResolvedConfig;
   let isServer: boolean;
+  let needSourcemap: boolean = false;
   return {
     name: 'vite:inject-vite-plugin-client',
     enforce: 'pre',
@@ -148,6 +166,7 @@ function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): P
     configResolved(resolvedConfig) {
       config = resolvedConfig;
       isServer = resolvedConfig.command === 'serve';
+      needSourcemap = resolvedConfig.isProduction && !!resolvedConfig.build.sourcemap;
     },
 
     transformIndexHtml: {
@@ -160,7 +179,7 @@ function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): P
               tag: 'script',
               attrs: {
                 type: 'module',
-                src: path.posix.join(config.base, CLIENT_PUBLIC_PATH),
+                src: path.posix.join(CLIENT_PUBLIC_PATH),
               },
               injectTo: 'head-prepend',
             },
@@ -171,6 +190,8 @@ function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): P
     async transform(code, id) {
       const nid = normalizePath(id);
       const path = normalizePath('vite-plugin-theme/es/client.js');
+      const getMap = () => (needSourcemap ? this.getCombinedSourcemap() : null);
+
       if (
         nid === CLIENT_PUBLIC_ABSOLUTE_PATH ||
         nid.endsWith(path) ||
@@ -181,13 +202,16 @@ function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): P
           build: { assetsDir },
         } = config;
 
-        return code
-          .replace(
-            '__OUTPUT_FILE_NAME__',
-            JSON.stringify(`${config.base}${assetsDir}/${cssOutputName}`)
-          )
-          .replace('__OPTIONS__', JSON.stringify(options))
-          .replace('__PROD__', JSON.stringify(!isServer));
+        return {
+          code: code
+            .replace(
+              '__OUTPUT_FILE_NAME__',
+              JSON.stringify(`${config.base}${assetsDir}/${cssOutputName}`)
+            )
+            .replace('__OPTIONS__', JSON.stringify(options))
+            .replace('__PROD__', JSON.stringify(!isServer)),
+          map: getMap(),
+        };
       }
     },
   };
