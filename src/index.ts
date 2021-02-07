@@ -79,12 +79,12 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
       },
 
       async transform(code, id) {
-        const getMap = () => (needSourcemap ? this.getCombinedSourcemap() : null);
+        const getResult = (content: string) => ({
+          map: needSourcemap ? this.getCombinedSourcemap() : null,
+          code: content,
+        });
         if (!cssLangRE.test(id)) {
-          return {
-            code,
-            map: getMap(),
-          };
+          return getResult(code);
         }
 
         const clientCode = isServer
@@ -98,10 +98,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
             : extractVariable(clientCode, colorVariables, resolveSelectorFn);
 
         if (!extractCssCodeTemplate) {
-          return {
-            code,
-            map: getMap(),
-          };
+          return getResult(code);
         }
 
         // dev-server
@@ -114,10 +111,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
             code,
           ];
 
-          return {
-            code: retCode.join('\n'),
-            map: getMap(),
-          };
+          return getResult(retCode.join('\n'));
         } else {
           if (!styleMap.has(id)) {
             extCssString += extractCssCodeTemplate;
@@ -125,10 +119,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
           styleMap.set(id, extractCssCodeTemplate);
         }
 
-        return {
-          code,
-          map: getMap(),
-        };
+        return getResult(code);
       },
 
       async writeBundle() {
