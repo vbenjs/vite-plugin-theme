@@ -3,6 +3,7 @@ import type { ViteThemeOptions, ResolveSelector } from './types';
 
 import path from 'path';
 import fs from 'fs-extra';
+import { debug as Debug } from 'debug';
 
 export * from '../client/colorUtils';
 
@@ -22,6 +23,9 @@ import {
 } from './constants';
 
 import { combineRegs, createHash, formatCss, getVariablesReg } from './utils';
+import chalk from 'chalk';
+
+const debug = Debug('vite-plugin-theme');
 
 export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
   let isServer = false;
@@ -41,9 +45,12 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
       wrapperCssSelector: '',
       fileName: 'app-theme-style',
       injectTo: 'body',
+      verbose: true,
     },
     opt
   );
+
+  debug('plugin options:', options);
 
   const {
     colorVariables,
@@ -51,6 +58,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
     resolveSelector,
     customerExtractVariable,
     fileName,
+    verbose,
   } = options;
 
   if (!colorVariables || colorVariables.length === 0) {
@@ -73,19 +81,21 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
         config = resolvedConfig;
         isServer = resolvedConfig.command === 'serve';
         clientPath = JSON.stringify(path.posix.join(config.base, CLIENT_PUBLIC_PATH));
-        needSourcemap =
-          resolvedConfig.command === 'serve' ||
-          (resolvedConfig.isProduction && !!resolvedConfig.build.sourcemap);
+        needSourcemap = resolvedConfig.isProduction && !!resolvedConfig.build.sourcemap;
+        debug('plugin config:', resolvedConfig);
       },
 
       async transform(code, id) {
-        const getResult = (content: string) => ({
-          map: needSourcemap ? this.getCombinedSourcemap() : null,
-          code: content,
-        });
         if (!cssLangRE.test(id)) {
-          return getResult(code);
+          return null;
         }
+
+        const getResult = (content: string) => {
+          return {
+            map: needSourcemap ? this.getCombinedSourcemap() : null,
+            code: content,
+          };
+        };
 
         const clientCode = isServer
           ? await getClientStyleString(code)
@@ -97,8 +107,10 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
             ? customerExtractVariable(clientCode)
             : extractVariable(clientCode, colorVariables, resolveSelectorFn);
 
+        debug('extractCssCodeTemplate:', id, extractCssCodeTemplate);
+
         if (!extractCssCodeTemplate) {
-          return getResult(code);
+          return null;
         }
 
         // dev-server
@@ -119,7 +131,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
           styleMap.set(id, extractCssCodeTemplate);
         }
 
-        return getResult(code);
+        return null;
       },
 
       async writeBundle() {
@@ -134,6 +146,19 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
         const cssOutputPath = path.resolve(root, outDir, assetsDir, cssOutputName);
         fs.writeFile(cssOutputPath, extCssString);
       },
+      closeBundle() {
+        if (verbose) {
+          const {
+            build: { outDir, assetsDir },
+          } = config;
+          console.log(
+            chalk.cyan('\n✨ [vite-plugin-theme]') + ` - extract css code file is successfully:`
+          );
+          console.log(
+            chalk.gray(outDir + '/' + chalk.green(`${assetsDir}/${cssOutputName}`)) + '\n'
+          );
+        }
+      },
     },
   ];
 }
@@ -143,7 +168,7 @@ function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): P
   let isServer: boolean;
   let needSourcemap: boolean = false;
   return {
-    name: 'vite:inject-vite-plugin-client',
+    name: 'vite:inject-vite-plugin-theme-client',
     enforce: 'pre',
     config: () => ({
       alias: [
@@ -189,6 +214,8 @@ function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): P
         // support .vite cache
         nid.includes(path.replace(/\//gi, '_'))
       ) {
+        debug('transform client file:', id, code);
+
         const {
           build: { assetsDir },
         } = config;

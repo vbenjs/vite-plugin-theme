@@ -9,4 +9,5 @@ export interface ViteThemeOptions {
   customerExtractVariable?: (code: string) => string;
   fileName?: string;
   injectTo?: InjectTo;
+  verbose?: boolean;
 }
