@@ -11,7 +11,7 @@ export const CLIENT_PUBLIC_ABSOLUTE_PATH = normalizePath(
   VITE_PLUGIN_THEME_CLIENT_ENTRY + '/client.js'
 );
 
-export const CLIENT_PUBLIC_PATH = '/@vite-plugin-theme/client.js';
+export const CLIENT_PUBLIC_PATH = `/${VITE_PLUGIN_THEME_CLIENT_ENTRY}/client.js`;
 
 export const commentRE = /\\\\?n|\n|\\\\?r|\/\*[\s\S]+?\*\//g;
 

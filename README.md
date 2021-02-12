@@ -6,6 +6,8 @@
 
 Vite plugin for dynamically changing the theme color of the interface
 
+After vite processes the css and dynamically analyzes the color value in the css text that matches the plug-in configuration, extract the specified color style code from all output css files. And create a `app-theme-style.css` file containing only color styles, dynamically insert it into the specified position (the bottom of the default body), and then replace the custom style/component library style color used with the new color, In order to achieve the purpose of dynamically changing the theme color of the project
+
 ### Install (yarn or npm)
 
 **node version:** >=12.0.0

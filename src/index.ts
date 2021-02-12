@@ -18,7 +18,6 @@ import {
   importSafeRE,
   CLIENT_PUBLIC_PATH,
   commentRE,
-  VITE_PLUGIN_THEME_CLIENT_ENTRY,
   CLIENT_PUBLIC_ABSOLUTE_PATH,
 } from './constants';
 
@@ -170,15 +169,6 @@ function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): P
   return {
     name: 'vite:inject-vite-plugin-theme-client',
     enforce: 'pre',
-    config: () => ({
-      alias: [
-        {
-          find: /^\/@vite-plugin-theme\//,
-          replacement: VITE_PLUGIN_THEME_CLIENT_ENTRY + '/',
-        },
-      ],
-    }),
-
     configResolved(resolvedConfig) {
       config = resolvedConfig;
       isServer = resolvedConfig.command === 'serve';
