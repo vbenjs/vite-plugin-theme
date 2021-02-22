@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-theme",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "description": "Vite plugin for dynamically changing the theme color of the interface",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -18,7 +18,7 @@
     "dev:client": "tsc -w --p tsconfig.client.json",
     "build": "npm run clean  && tsup src/index.ts --dts --format cjs,esm && tsc -p tsconfig.client.json",
     "prepublishOnly": "yarn build",
-    "log": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
+    "log": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "example:dev": "npm -C example run serve",
     "example:build": "npm -C example run build",
     "release:prepare": "shipjs prepare",
