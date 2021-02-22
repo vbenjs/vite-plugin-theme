@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-theme",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Vite plugin for dynamically changing the theme color of the interface",
   "main": "dist/index.js",
   "module": "dist/index.js",
