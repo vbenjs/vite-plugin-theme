@@ -9,12 +9,19 @@ jobs:
   publish-npm:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v1
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: use Node.js 14
+        uses: actions/setup-node@v1
         with:
-          node-version: 10
           registry-url: https://registry.npmjs.org/
-      - run: npm install
-      - run: npm publish
+          node-version: 14
+
+      - name: npm install and publish
+        run: |
+          npm install
+          npm run test
+
         env:
           NODE_AUTH_TOKEN: ${{secrets.npm_token}}
