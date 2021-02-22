@@ -1,0 +1,23 @@
+name: 'size'
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+jobs:
+  size:
+    runs-on: ubuntu-latest
+    env:
+      CI_JOB_NUMBER: 1
+    steps:
+      - uses: actions/checkout@v1
+      - uses: bahmutov/npm-install@v1
+
+      - uses: posva/size-check-action@v1.1.2
+        with:
+          github_token: ${{ secrets.OPER_TOKEN }}
+          build_script: size
+          files: dist/index.js

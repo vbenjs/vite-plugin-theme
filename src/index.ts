@@ -75,7 +75,6 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
     {
       ...emptyPlugin,
       enforce: 'post',
-
       configResolved(resolvedConfig) {
         config = resolvedConfig;
         isServer = resolvedConfig.command === 'serve';
@@ -134,6 +133,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
       },
 
       async writeBundle() {
+        if (isServer) return;
         const {
           root,
           build: { outDir, assetsDir, minify },
@@ -146,7 +146,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
         fs.writeFile(cssOutputPath, extCssString);
       },
       closeBundle() {
-        if (verbose) {
+        if (verbose && !isServer) {
           const {
             build: { outDir, assetsDir },
           } = config;
