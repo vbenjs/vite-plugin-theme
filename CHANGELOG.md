@@ -1,3 +1,12 @@
+## [0.4.8](https://github.com/vbenjs/vite-plugin-theme/compare/v0.4.7...v0.4.8) (2021-02-22)
+
+
+### Features
+
+* add github ci ([f90b1e7](https://github.com/vbenjs/vite-plugin-theme/commit/f90b1e75fd597f0f1bb69172d3a10fb6a190fc21))
+
+
+
 ## [0.4.7](https://github.com/vbenjs/vite-plugin-theme/compare/v0.4.61...v0.4.7) (2021-02-22)
 
 
