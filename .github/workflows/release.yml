@@ -22,7 +22,7 @@ jobs:
           tag_name: ${{ github.ref }}
           body: |
             Please refer to [CHANGELOG.md](https://github.com/anncwb/vite-plugin-theme/blob/main/CHANGELOG.md) for details.
-      - name: npm install and create changeLog
-        run: |
-          npm install
-          npm run log
+      # - name: npm install and create changeLog
+      #   run: |
+      #     npm install
+      #     npm run log
