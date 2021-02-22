@@ -12,7 +12,7 @@
 
 **node version:** >=12.0.0
 
-**vite version:** >=2.0.0-beta.62
+**vite version:** >=2.0.0
 
 ```
 yarn add vite-plugin-theme -D
