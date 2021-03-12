@@ -1,3 +1,12 @@
+# [0.5.0](https://github.com/vbenjs/vite-plugin-theme/compare/v0.4.8...v0.5.0) (2021-03-12)
+
+
+### Bug Fixes
+
+* ensure the colors are extracted correctly ([fc57ac0](https://github.com/vbenjs/vite-plugin-theme/commit/fc57ac0f6f5a252a1c6a281810d4b63573b535d6))
+
+
+
 ## [0.4.8](https://github.com/vbenjs/vite-plugin-theme/compare/v0.4.7...v0.4.8) (2021-02-22)
 
 
