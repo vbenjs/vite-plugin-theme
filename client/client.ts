@@ -36,7 +36,7 @@ const isProd = __PROD__;
 const options = __OPTIONS__;
 
 const injectTo = options.injectTo;
-const debounceRender = debounce(30, render);
+const debounceRender = debounce(200, render);
 
 (() => {
   if (!window[globalField]) {
@@ -143,7 +143,6 @@ export async function replaceCssColors(css: string, colors: string[]) {
         '([\\da-f]{2})?(\\b|\\)|,|\\s)',
       'ig'
     );
-
     retCss = retCss.replace(reg, colors[index] + '$1$2');
   });
   return retCss;

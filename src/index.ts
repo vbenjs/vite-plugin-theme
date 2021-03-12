@@ -1,6 +1,5 @@
-import { Plugin, ResolvedConfig, normalizePath } from 'vite';
 import type { ViteThemeOptions, ResolveSelector } from './types';
-
+import { Plugin, ResolvedConfig, normalizePath } from 'vite';
 import path from 'path';
 import fs from 'fs-extra';
 import { debug as Debug } from 'debug';
@@ -133,7 +132,6 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
       },
 
       async writeBundle() {
-        if (isServer) return;
         const {
           root,
           build: { outDir, assetsDir, minify },
@@ -141,10 +139,10 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
         if (minify) {
           extCssString = await minifyCSS(extCssString, config);
         }
-
         const cssOutputPath = path.resolve(root, outDir, assetsDir, cssOutputName);
         fs.writeFile(cssOutputPath, extCssString);
       },
+
       closeBundle() {
         if (verbose && !isServer) {
           const {
@@ -154,7 +152,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
             chalk.cyan('\n✨ [vite-plugin-theme]') + ` - extract css code file is successfully:`
           );
           console.log(
-            chalk.gray(outDir + '/' + chalk.green(`${assetsDir}/${cssOutputName}`)) + '\n'
+            chalk.gray(outDir + '/' + chalk.magentaBright(`${assetsDir}/${cssOutputName}`)) + '\n'
           );
         }
       },
@@ -165,7 +163,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
 function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): Plugin {
   let config: ResolvedConfig;
   let isServer: boolean;
-  let needSourcemap: boolean = false;
+  let needSourcemap = false;
   return {
     name: 'vite:inject-vite-plugin-theme-client',
     enforce: 'pre',
@@ -280,6 +278,9 @@ function extractVariable(code: string, colorVariables: string[], resolveSelector
   return allExtractedVariable;
 }
 
+/**
+ * Compress the generated code
+ */
 let CleanCSS: any;
 async function minifyCSS(css: string, config: ResolvedConfig) {
   CleanCSS = CleanCSS || (await import('clean-css'));
@@ -305,13 +306,13 @@ async function getClientStyleString(code: string) {
   if (!code.includes(VITE_CLIENT_ENTRY)) {
     return code;
   }
-
+  code = code.replace(/\\n/g, '');
   const cssPrefix = cssVariableString;
   const cssPrefixLen = cssPrefix.length;
 
   const cssPrefixIndex = code.indexOf(cssPrefix);
   const len = cssPrefixIndex + cssPrefixLen;
-  const cssLastIndex = code.indexOf('"', len + 1);
+  const cssLastIndex = code.indexOf('\n', len + 1);
 
   if (cssPrefixIndex !== -1) {
     code = code.slice(len, cssLastIndex);

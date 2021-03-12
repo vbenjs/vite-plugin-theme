@@ -9,9 +9,11 @@
     "outDir": "dist",
     "module": "commonjs",
     "lib": ["DOM", "ESNext"],
+    "types": ["vite/client", "jest", "node"],
     "sourceMap": false,
     "noEmitOnError": true,
     "noImplicitAny": false
   },
-  "include": ["./src"]
+  "include": ["./src", "tests/**/*"],
+  "exclude": ["**/dist", "**/node_modules"]
 }

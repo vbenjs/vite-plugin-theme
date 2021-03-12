@@ -24,12 +24,12 @@ export function combineRegs(decorator = '', joinString = '', ...args: any[]) {
 }
 
 export function formatCss(s: string) {
-  s = s.replace(/\s*([\{\}\:\;\,])\s*/g, '$1');
+  s = s.replace(/\s*([{}:;,])\s*/g, '$1');
   s = s.replace(/;\s*;/g, ';');
-  s = s.replace(/\,[\s\.\#\d]*{/g, '{');
+  s = s.replace(/,[\s.#\d]*{/g, '{');
   s = s.replace(/([^\s])\{([^\s])/g, '$1 {\n\t$2');
   s = s.replace(/([^\s])\}([^\n]*)/g, '$1\n}\n$2');
-  s = s.replace(/([^\s]);([^\s\}])/g, '$1;\n\t$2');
+  s = s.replace(/([^\s]);([^\s}])/g, '$1;\n\t$2');
   return s;
 }
 
