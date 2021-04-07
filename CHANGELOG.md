@@ -1,3 +1,17 @@
+# [0.6.0](https://github.com/vbenjs/vite-plugin-theme/compare/v0.4.8...v0.6.0) (2021-04-07)
+
+
+### Bug Fixes
+
+* ensure the colors are extracted correctly ([fc57ac0](https://github.com/vbenjs/vite-plugin-theme/commit/fc57ac0f6f5a252a1c6a281810d4b63573b535d6))
+
+
+### Features
+
+* support less dark theme ([bf66dce](https://github.com/vbenjs/vite-plugin-theme/commit/bf66dce09ed7a9e3a68608bad04a7f516c041f4c))
+
+
+
 # [0.5.0](https://github.com/vbenjs/vite-plugin-theme/compare/v0.4.8...v0.5.0) (2021-03-12)
 
 
