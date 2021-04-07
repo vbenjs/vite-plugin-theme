@@ -1,5 +1,6 @@
 export const globalField = '__VITE_THEME__';
 export const styleTagId = '__VITE_PLUGIN_THEME__';
+export const darkStyleTagId = '__VITE_PLUGIN_DARK_THEME__';
 
 export interface Options {
   colorVariables: string[];
@@ -26,17 +27,20 @@ declare global {
     [globalField]: GlobalConfig;
   }
 }
-declare const __OPTIONS__: Options;
-declare const __OUTPUT_FILE_NAME__: string;
+declare const __COLOR_PLUGIN_OPTIONS__: Options;
+declare const __COLOR_PLUGIN_OUTPUT_FILE_NAME__: string;
+declare const __ANTD_DARK_PLUGIN_OUTPUT_FILE_NAME__: string;
+declare const __ANTD_DARK_PLUGIN_EXTRACT_CSS__: boolean;
 declare const __PROD__: boolean;
 
-const outputFileName = __OUTPUT_FILE_NAME__;
+const colorPluginOutputFileName = __COLOR_PLUGIN_OUTPUT_FILE_NAME__;
 const isProd = __PROD__;
+const colorPluginOptions = __COLOR_PLUGIN_OPTIONS__;
 
-const options = __OPTIONS__;
+const injectTo = colorPluginOptions.injectTo;
+const debounceThemeRender = debounce(200, renderTheme);
 
-const injectTo = options.injectTo;
-const debounceRender = debounce(200, render);
+export let darkCssIsReady = false;
 
 (() => {
   if (!window[globalField]) {
@@ -48,9 +52,37 @@ const debounceRender = debounce(200, render);
   setGlobalOptions('replaceStyleVariables', replaceStyleVariables);
   if (!getGlobalOptions('defaultOptions')) {
     // assign defines
-    setGlobalOptions('defaultOptions', options);
+    setGlobalOptions('defaultOptions', colorPluginOptions);
   }
 })();
+
+export function addCssToQueue(id: string, styleString: string) {
+  const styleIdMap = getGlobalOptions('styleIdMap')!;
+
+  if (!styleIdMap.get(id)) {
+    window[globalField].styleRenderQueueMap!.set(id, styleString);
+    debounceThemeRender();
+  }
+}
+
+function renderTheme() {
+  const variables = getGlobalOptions('colorVariables')!;
+  if (!variables) {
+    return;
+  }
+  const styleRenderQueueMap = getGlobalOptions('styleRenderQueueMap')!;
+
+  const styleDom = getStyleDom(styleTagId);
+  let html = styleDom.innerHTML;
+  for (let [id, css] of styleRenderQueueMap.entries()) {
+    html += css;
+    window[globalField].styleRenderQueueMap!.delete(id);
+    window[globalField].styleIdMap!.set(id, css);
+  }
+  replaceCssColors(html, variables).then((processCss) => {
+    appendCssToDom(styleDom, processCss, injectTo);
+  });
+}
 
 export async function replaceStyleVariables({ colorVariables }: { colorVariables: string[] }) {
   setGlobalOptions('colorVariables', colorVariables);
@@ -60,75 +92,29 @@ export async function replaceStyleVariables({ colorVariables }: { colorVariables
     for (let [id, css] of styleIdMap.entries()) {
       styleRenderQueueMap.set(id, css);
     }
-    render();
+    renderTheme();
   } else {
     try {
-      const cssText = await fetchCss();
+      const cssText = await fetchCss(colorPluginOutputFileName);
+      const styleDom = getStyleDom(styleTagId);
       const processCss = await replaceCssColors(cssText, colorVariables);
-      appendCssToDom(processCss, injectTo);
+      appendCssToDom(styleDom, processCss, injectTo);
     } catch (error) {
       throw new Error(error);
     }
   }
 }
 
-export function addCssToQueue(id: string, styleString: string) {
-  const styleIdMap = getGlobalOptions('styleIdMap')!;
-
-  if (!styleIdMap.get(id)) {
-    window[globalField].styleRenderQueueMap!.set(id, styleString);
-    debounceRender();
+export async function loadDarkThemeCss() {
+  const extractCss = __ANTD_DARK_PLUGIN_EXTRACT_CSS__;
+  if (darkCssIsReady || !extractCss) {
+    return;
   }
-}
-
-function render() {
-  const variables = getGlobalOptions('colorVariables')!;
-  const styleRenderQueueMap = getGlobalOptions('styleRenderQueueMap')!;
-  if (!variables) return;
-
-  const style = getStyleDom();
-  let html = style.innerHTML;
-  for (let [id, css] of styleRenderQueueMap.entries()) {
-    html += css;
-    window[globalField].styleRenderQueueMap!.delete(id);
-    window[globalField].styleIdMap!.set(id, css);
-  }
-  replaceCssColors(html, variables).then((processCss) => {
-    appendCssToDom(processCss, injectTo);
-  });
-}
-
-function debounce(delay: number, fn: (...arg: any[]) => any) {
-  let timer;
-  return function (...args) {
-    // @ts-ignore
-    const ctx = this;
-    clearTimeout(timer);
-    timer = setTimeout(function () {
-      fn.apply(ctx, args);
-    }, delay);
-  };
-}
-
-export function setGlobalOptions<T extends keyof GlobalConfig = any>(
-  key: T,
-  value: GlobalConfig[T]
-) {
-  window[globalField][key] = value;
-}
-
-export function getGlobalOptions<T extends keyof GlobalConfig = any>(key: T): GlobalConfig[T] {
-  return window[globalField][key];
-}
-
-export function getStyleDom() {
-  let style = document.getElementById(styleTagId);
-  if (!style) {
-    style = document.createElement('style');
-    style.setAttribute('id', styleTagId);
-    // document.head.appendChild(style);
-  }
-  return style;
+  const colorPluginOutputFileName = __ANTD_DARK_PLUGIN_OUTPUT_FILE_NAME__;
+  const cssText = await fetchCss(colorPluginOutputFileName);
+  const styleDom = getStyleDom(darkStyleTagId);
+  appendCssToDom(styleDom, cssText, injectTo);
+  darkCssIsReady = true;
 }
 
 // Used to replace css color variables. Note that the order of the two arrays must be the same
@@ -148,8 +134,31 @@ export async function replaceCssColors(css: string, colors: string[]) {
   return retCss;
 }
 
-export async function appendCssToDom(cssText: string, appendTo: InjectTo = 'body') {
-  const styleDom = getStyleDom();
+export function setGlobalOptions<T extends keyof GlobalConfig = any>(
+  key: T,
+  value: GlobalConfig[T]
+) {
+  window[globalField][key] = value;
+}
+
+export function getGlobalOptions<T extends keyof GlobalConfig = any>(key: T): GlobalConfig[T] {
+  return window[globalField][key];
+}
+
+export function getStyleDom(id: string) {
+  let style = document.getElementById(id);
+  if (!style) {
+    style = document.createElement('style');
+    style.setAttribute('id', id);
+  }
+  return style;
+}
+
+export async function appendCssToDom(
+  styleDom: HTMLElement,
+  cssText: string,
+  appendTo: InjectTo = 'body'
+) {
   styleDom.innerHTML = cssText;
   if (appendTo === 'head') {
     document.head.appendChild(styleDom);
@@ -161,7 +170,7 @@ export async function appendCssToDom(cssText: string, appendTo: InjectTo = 'body
   }
 }
 
-function fetchCss(): Promise<string> {
+function fetchCss(fileName: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const append = getGlobalOptions('appended');
     if (append) {
@@ -186,7 +195,19 @@ function fetchCss(): Promise<string> {
     xhr.ontimeout = function (e) {
       reject(e);
     };
-    xhr.open('GET', outputFileName, true);
+    xhr.open('GET', fileName, true);
     xhr.send();
   });
+}
+
+function debounce(delay: number, fn: (...arg: any[]) => any) {
+  let timer;
+  return function (...args) {
+    // @ts-ignore
+    const ctx = this;
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      fn.apply(ctx, args);
+    }, delay);
+  };
 }

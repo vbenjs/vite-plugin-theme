@@ -1,27 +1,32 @@
-import type { ViteThemeOptions, ResolveSelector } from './types';
-import { Plugin, ResolvedConfig, normalizePath } from 'vite';
+import { Plugin, ResolvedConfig } from 'vite';
 import path from 'path';
 import fs from 'fs-extra';
 import { debug as Debug } from 'debug';
+import { extractVariable, minifyCSS } from './utils';
 
 export * from '../client/colorUtils';
 
-import {
-  VITE_CLIENT_ENTRY,
-  cssLangRE,
-  cssVariableString,
-  cssBlockRE,
-  ruleRE,
-  cssValueRE,
-  safeEmptyRE,
-  importSafeRE,
-  CLIENT_PUBLIC_PATH,
-  commentRE,
-  CLIENT_PUBLIC_ABSOLUTE_PATH,
-} from './constants';
+export { antdDarkThemePlugin } from './antdDarkThemePlugin';
 
-import { combineRegs, createHash, formatCss, getVariablesReg } from './utils';
+import { VITE_CLIENT_ENTRY, cssLangRE, cssVariableString, CLIENT_PUBLIC_PATH } from './constants';
+
+export type ResolveSelector = (selector: string) => string;
+
+export type InjectTo = 'head' | 'body' | 'body-prepend';
+
+export interface ViteThemeOptions {
+  colorVariables: string[];
+  wrapperCssSelector?: string;
+  resolveSelector?: ResolveSelector;
+  customerExtractVariable?: (code: string) => string;
+  fileName?: string;
+  injectTo?: InjectTo;
+  verbose?: boolean;
+}
+
+import { createFileHash, formatCss } from './utils';
 import chalk from 'chalk';
+import { injectClientPlugin } from './injectClientPlugin';
 
 const debug = Debug('vite-plugin-theme');
 
@@ -31,7 +36,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
   let clientPath = '';
   const styleMap = new Map<string, string>();
 
-  let extCssString = '';
+  let extCssSet = new Set<string>();
 
   const emptyPlugin: Plugin = {
     name: 'vite:theme',
@@ -66,11 +71,14 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
 
   const resolveSelectorFn = resolveSelector || ((s: string) => `${wrapperCssSelector} ${s}`);
 
-  const cssOutputName = `${fileName}.${createHash()}.css`;
+  const cssOutputName = `${fileName}.${createFileHash()}.css`;
 
   let needSourcemap = false;
   return [
-    injectClientPlugin(options, cssOutputName),
+    injectClientPlugin('colorPlugin', {
+      colorPluginCssOutputName: cssOutputName,
+      colorPluginOptions: options,
+    }),
     {
       ...emptyPlugin,
       enforce: 'post',
@@ -78,7 +86,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
         config = resolvedConfig;
         isServer = resolvedConfig.command === 'serve';
         clientPath = JSON.stringify(path.posix.join(config.base, CLIENT_PUBLIC_PATH));
-        needSourcemap = resolvedConfig.isProduction && !!resolvedConfig.build.sourcemap;
+        needSourcemap = !!resolvedConfig.build.sourcemap;
         debug('plugin config:', resolvedConfig);
       },
 
@@ -123,7 +131,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
           return getResult(retCode.join('\n'));
         } else {
           if (!styleMap.has(id)) {
-            extCssString += extractCssCodeTemplate;
+            extCssSet.add(extractCssCodeTemplate);
           }
           styleMap.set(id, extractCssCodeTemplate);
         }
@@ -136,11 +144,15 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
           root,
           build: { outDir, assetsDir, minify },
         } = config;
+        let extCssString = '';
+        for (const css of extCssSet) {
+          extCssString += css;
+        }
         if (minify) {
           extCssString = await minifyCSS(extCssString, config);
         }
         const cssOutputPath = path.resolve(root, outDir, assetsDir, cssOutputName);
-        fs.writeFile(cssOutputPath, extCssString);
+        fs.writeFileSync(cssOutputPath, extCssString);
       },
 
       closeBundle() {
@@ -151,154 +163,17 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
           console.log(
             chalk.cyan('\n✨ [vite-plugin-theme]') + ` - extract css code file is successfully:`
           );
+          const { size } = fs.statSync(path.join(outDir, assetsDir, cssOutputName));
           console.log(
-            chalk.gray(outDir + '/' + chalk.magentaBright(`${assetsDir}/${cssOutputName}`)) + '\n'
+            chalk.dim(outDir + '/') +
+              chalk.magentaBright(`${assetsDir}/${cssOutputName}`) +
+              `\t\t${chalk.dim((size / 1024).toFixed(2) + 'kb')}` +
+              '\n'
           );
         }
       },
     },
   ];
-}
-
-function injectClientPlugin(options: ViteThemeOptions, cssOutputName: string): Plugin {
-  let config: ResolvedConfig;
-  let isServer: boolean;
-  let needSourcemap = false;
-  return {
-    name: 'vite:inject-vite-plugin-theme-client',
-    enforce: 'pre',
-    configResolved(resolvedConfig) {
-      config = resolvedConfig;
-      isServer = resolvedConfig.command === 'serve';
-      needSourcemap = resolvedConfig.isProduction && !!resolvedConfig.build.sourcemap;
-    },
-
-    transformIndexHtml: {
-      enforce: 'pre',
-      async transform(html) {
-        return {
-          html,
-          tags: [
-            {
-              tag: 'script',
-              attrs: {
-                type: 'module',
-                src: path.posix.join(CLIENT_PUBLIC_PATH),
-              },
-              injectTo: 'head-prepend',
-            },
-          ],
-        };
-      },
-    },
-    async transform(code, id) {
-      const nid = normalizePath(id);
-      const path = normalizePath('vite-plugin-theme/es/client.js');
-      const getMap = () => (needSourcemap ? this.getCombinedSourcemap() : null);
-
-      if (
-        nid === CLIENT_PUBLIC_ABSOLUTE_PATH ||
-        nid.endsWith(path) ||
-        // support .vite cache
-        nid.includes(path.replace(/\//gi, '_'))
-      ) {
-        debug('transform client file:', id, code);
-
-        const {
-          build: { assetsDir },
-        } = config;
-
-        return {
-          code: code
-            .replace(
-              '__OUTPUT_FILE_NAME__',
-              JSON.stringify(`${config.base}${assetsDir}/${cssOutputName}`)
-            )
-            .replace('__OPTIONS__', JSON.stringify(options))
-            .replace('__PROD__', JSON.stringify(!isServer)),
-          map: getMap(),
-        };
-      }
-    },
-  };
-}
-
-// Used to extract relevant color configuration in css
-function extractVariable(code: string, colorVariables: string[], resolveSelector: ResolveSelector) {
-  code = code.replace(commentRE, '');
-
-  const cssBlocks = code.match(cssBlockRE);
-  if (!cssBlocks || cssBlocks.length === 0) {
-    return '';
-  }
-
-  let allExtractedVariable = '';
-
-  const variableReg = getVariablesReg(colorVariables);
-
-  for (let index = 0; index < cssBlocks.length; index++) {
-    const cssBlock = cssBlocks[index];
-    if (!variableReg.test(cssBlock) || !cssBlock) {
-      continue;
-    }
-
-    const cssSelector = cssBlock.match(/[^{]*/)?.[0] ?? '';
-    if (!cssSelector) {
-      continue;
-    }
-
-    if (/^@.*keyframes/.test(cssSelector)) {
-      allExtractedVariable += `${cssSelector}{${extractVariable(
-        cssBlock.replace(/[^{]*\{/, '').replace(/}$/, ''),
-        colorVariables,
-        resolveSelector
-      )}}`;
-      continue;
-    }
-
-    const colorReg = combineRegs(
-      'g',
-      '',
-      ruleRE,
-      cssValueRE,
-      safeEmptyRE,
-      variableReg,
-      importSafeRE
-    );
-
-    const colorReplaceTemplates = cssBlock.match(colorReg);
-
-    if (!colorReplaceTemplates) {
-      continue;
-    }
-
-    allExtractedVariable += `${resolveSelector(cssSelector)} {${colorReplaceTemplates.join(';')}}`;
-  }
-
-  return allExtractedVariable;
-}
-
-/**
- * Compress the generated code
- */
-let CleanCSS: any;
-async function minifyCSS(css: string, config: ResolvedConfig) {
-  CleanCSS = CleanCSS || (await import('clean-css'));
-  const res = new CleanCSS({
-    rebase: false,
-    ...config.build.cleanCssOptions,
-  }).minify(css);
-
-  if (res.errors && res.errors.length) {
-    console.error(`error when minifying css:\n${res.errors}`);
-    throw res.errors[0];
-  }
-
-  if (res.warnings && res.warnings.length) {
-    config.logger.warn(`warnings when minifying css:\n${res.warnings}`);
-  }
-
-  return res.styles;
 }
 
 // Intercept the css code embedded in js

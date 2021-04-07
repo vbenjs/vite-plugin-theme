@@ -17,6 +17,8 @@ export const commentRE = /\\\\?n|\n|\\\\?r|\/\*[\s\S]+?\*\//g;
 
 const cssLangs = `\\.(css|less|sass|scss|styl|stylus|postcss)($|\\?)`;
 
+export const colorRE = /#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})|rgba?\((.*),\s*(.*),\s*(.*)(?:,\s*(.*(?:.*)?))?\)/gi;
+
 export const cssVariableString = `const css = "`;
 
 export const cssBlockRE = /[^}]*\{[^{]*\}/g;

@@ -1,3 +1,7 @@
+import { ResolvedConfig } from 'vite';
+import { createHash } from 'crypto';
+import { ResolveSelector } from '.';
+import { commentRE, cssBlockRE, ruleRE, cssValueRE, safeEmptyRE, importSafeRE } from './constants';
 export function getVariablesReg(colors: string[]) {
   return new RegExp(
     colors
@@ -33,8 +37,93 @@ export function formatCss(s: string) {
   return s;
 }
 
-export function createHash(hashLength = 8) {
-  return Array.from(Array(Number(hashLength)), () =>
-    Math.floor(Math.random() * 36).toString(36)
-  ).join('');
+export function createFileHash() {
+  return createHash('sha256').digest('hex').substr(0, 8);
+}
+
+/**
+ * Compress the generated code
+ */
+let CleanCSS: any;
+export async function minifyCSS(css: string, config: ResolvedConfig) {
+  CleanCSS = CleanCSS || (await import('clean-css'));
+  const res = new CleanCSS({
+    rebase: false,
+    ...config.build.cleanCssOptions,
+  }).minify(css);
+
+  if (res.errors && res.errors.length) {
+    console.error(`error when minifying css:\n${res.errors}`);
+    throw res.errors[0];
+  }
+
+  if (res.warnings && res.warnings.length) {
+    config.logger.warn(`warnings when minifying css:\n${res.warnings}`);
+  }
+
+  return res.styles;
+}
+
+// Used to extract relevant color configuration in css
+export function extractVariable(
+  code: string,
+  colorVariables: string[],
+  resolveSelector?: ResolveSelector,
+  colorRE?: RegExp
+) {
+  colorVariables = Array.from(new Set(colorVariables));
+  code = code.replace(commentRE, '');
+
+  const cssBlocks = code.match(cssBlockRE);
+  if (!cssBlocks || cssBlocks.length === 0) {
+    return '';
+  }
+
+  let allExtractedVariable = '';
+
+  const variableReg = getVariablesReg(colorVariables);
+
+  for (let index = 0; index < cssBlocks.length; index++) {
+    const cssBlock = cssBlocks[index];
+    if (!variableReg.test(cssBlock) || !cssBlock) {
+      continue;
+    }
+
+    const cssSelector = cssBlock.match(/[^{]*/)?.[0] ?? '';
+    if (!cssSelector) {
+      continue;
+    }
+
+    if (/^@.*keyframes/.test(cssSelector)) {
+      allExtractedVariable += `${cssSelector}{${extractVariable(
+        cssBlock.replace(/[^{]*\{/, '').replace(/}$/, ''),
+        colorVariables,
+        resolveSelector,
+        colorRE
+      )}}`;
+      continue;
+    }
+
+    const colorReg = combineRegs(
+      'g',
+      '',
+      ruleRE,
+      cssValueRE,
+      safeEmptyRE,
+      variableReg,
+      importSafeRE
+    );
+
+    const colorReplaceTemplates = cssBlock.match(colorRE || colorReg);
+
+    if (!colorReplaceTemplates) {
+      continue;
+    }
+
+    allExtractedVariable += `${
+      resolveSelector ? resolveSelector(cssSelector) : cssSelector
+    } {${colorReplaceTemplates.join(';')}}`;
+  }
+
+  return allExtractedVariable;
 }
