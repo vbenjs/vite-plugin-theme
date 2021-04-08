@@ -1,3 +1,12 @@
+## [0.6.2](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.0...v0.6.2) (2021-04-08)
+
+
+### Bug Fixes
+
+* disable esbuild ([831d91a](https://github.com/vbenjs/vite-plugin-theme/commit/831d91ae198c1a3f7f9f36b8dbf23a0f395f73ce))
+
+
+
 # [0.6.0](https://github.com/vbenjs/vite-plugin-theme/compare/v0.4.8...v0.6.0) (2021-04-07)
 
 
