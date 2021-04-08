@@ -6,8 +6,6 @@ import { createFileHash, minifyCSS, extractVariable } from './utils';
 import chalk from 'chalk';
 import { colorRE } from './constants';
 import { injectClientPlugin } from './injectClientPlugin';
-// import { build } from 'esbuild';
-// import { lessLoader } from './esbuild/less';
 import { lessPlugin } from './preprocessor/less';
 
 export interface AntdDarkThemeOption {
@@ -17,9 +15,8 @@ export interface AntdDarkThemeOption {
   selector?: string;
   filter?: (id: string) => boolean;
   extractCss?: boolean;
+  preloadFiles?: string[];
 }
-
-// const esbuildRe = /(\.(svg|png|jpeg|jpg|gif|bmp|webp|ttf))|url/gi;
 
 export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
   const {
@@ -29,6 +26,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
     selector,
     filter,
     extractCss = true,
+    preloadFiles = [],
   } = options;
   let isServer = false;
   let needSourcemap = false;
@@ -44,6 +42,29 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
     return `[${selector || 'data-theme="dark"'}] {${css}}`;
   };
 
+  async function preloadLess() {
+    if (!preloadFiles || !preloadFiles.length) {
+      return;
+    }
+    for (const id of preloadFiles) {
+      const code = fs.readFileSync(id, 'utf-8');
+      less
+        .render(code, {
+          javascriptEnabled: true,
+          modifyVars: darkModifyVars,
+          filename: path.resolve(id),
+          plugins: [lessPlugin(id, config)],
+        })
+        .then(({ css }) => {
+          const colors = css.match(colorRE);
+          if (colors) {
+            css = extractVariable(css, colors.concat(['transparent']));
+            codeCache.set(id, { code, css });
+          }
+        });
+    }
+  }
+
   return [
     injectClientPlugin('antdDarkPlugin', {
       antdDarkCssOutputName: cssOutputName,
@@ -56,6 +77,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
         config = resolvedConfig;
         isServer = resolvedConfig.command === 'serve';
         needSourcemap = !!resolvedConfig.build.sourcemap;
+        isServer && preloadLess();
       },
 
       async transform(code, id) {
@@ -78,35 +100,13 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
         const cache = codeCache.get(id);
         const isUpdate = !cache || cache.code !== code;
 
-        // const unSupportEsBuild = id.endsWith('lang.less') || code.match(esbuildRe);
         if (isUpdate) {
-          let css = '';
-          //  TODO process .vue less
-          // if (unSupportEsBuild) {
-          const result = await less.render(code, {
+          const { css } = await less.render(code, {
             javascriptEnabled: true,
             modifyVars: darkModifyVars,
             filename: path.resolve(id),
             plugins: [lessPlugin(id, config)],
           });
-          css = result.css;
-          // } else {
-          //   const { outputFiles } = await build({
-          //     entryPoints: [id],
-          //     bundle: true,
-          //     write: false,
-
-          //     plugins: [
-          //       lessLoader(code, {
-          //         javascriptEnabled: true,
-          //         modifyVars: darkModifyVars,
-          //         filename: path.resolve(id),
-          //         plugins: [lessPlugin(id, config)],
-          //       }),
-          //     ],
-          //   });
-          //   css = outputFiles?.[0]?.text ?? '';
-          // }
 
           const colors = css.match(colorRE);
           if (colors) {
@@ -123,30 +123,12 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
           return getResult(`${getCss(processCss)}\n` + code);
         } else {
           if (!styleMap.has(id)) {
-            let _css = '';
-
-            // if (unSupportEsBuild) {
             const { css } = await less.render(getCss(processCss), {
               filename: path.resolve(id),
               plugins: [lessPlugin(id, config)],
             });
-            _css = css;
-            // } else {
-            //   const { outputFiles } = await build({
-            //     entryPoints: [id],
-            //     bundle: true,
-            //     write: false,
-            //     plugins: [
-            //       lessLoader(getCss(processCss), {
-            //         filename: path.resolve(id),
-            //         plugins: [lessPlugin(id, config)],
-            //       }),
-            //     ],
-            //   });
-            //   _css = outputFiles?.[0]?.text ?? '';
-            // }
 
-            extCssString += `${_css}\n`;
+            extCssString += `${css}\n`;
           }
           styleMap.set(id, processCss);
         }
