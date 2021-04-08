@@ -1,3 +1,12 @@
+## [0.6.3](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.2...v0.6.3) (2021-04-08)
+
+
+### Features
+
+* add preloadLess option ([d3ebc6c](https://github.com/vbenjs/vite-plugin-theme/commit/d3ebc6c8d81c1fedda974a97a07027c09d656aed))
+
+
+
 ## [0.6.2](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.0...v0.6.2) (2021-04-08)
 
 
