@@ -6,8 +6,9 @@ import { createFileHash, minifyCSS, extractVariable } from './utils';
 import chalk from 'chalk';
 import { colorRE } from './constants';
 import { injectClientPlugin } from './injectClientPlugin';
-import { build } from 'esbuild';
-import { lessLoader } from './esbuild-plugin-less';
+// import { build } from 'esbuild';
+// import { lessLoader } from './esbuild/less';
+import { lessPlugin } from './preprocessor/less';
 
 export interface AntdDarkThemeOption {
   darkModifyVars?: any;
@@ -17,6 +18,8 @@ export interface AntdDarkThemeOption {
   filter?: (id: string) => boolean;
   extractCss?: boolean;
 }
+
+// const esbuildRe = /(\.(svg|png|jpeg|jpg|gif|bmp|webp|ttf))|url/gi;
 
 export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
   const {
@@ -75,34 +78,35 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
         const cache = codeCache.get(id);
         const isUpdate = !cache || cache.code !== code;
 
-        const isLess = !id.endsWith('lang.less');
+        // const unSupportEsBuild = id.endsWith('lang.less') || code.match(esbuildRe);
         if (isUpdate) {
           let css = '';
-
           //  TODO process .vue less
-          if (!isLess) {
-            const result = await less.render(code, {
-              javascriptEnabled: true,
-              modifyVars: darkModifyVars,
-              filename: path.resolve(id),
-            });
-            css = result.css;
-          } else {
-            const { outputFiles } = await build({
-              entryPoints: [id],
-              bundle: true,
-              write: false,
+          // if (unSupportEsBuild) {
+          const result = await less.render(code, {
+            javascriptEnabled: true,
+            modifyVars: darkModifyVars,
+            filename: path.resolve(id),
+            plugins: [lessPlugin(id, config)],
+          });
+          css = result.css;
+          // } else {
+          //   const { outputFiles } = await build({
+          //     entryPoints: [id],
+          //     bundle: true,
+          //     write: false,
 
-              plugins: [
-                lessLoader(code, id, {
-                  javascriptEnabled: true,
-                  modifyVars: darkModifyVars,
-                  filename: path.resolve(id),
-                }),
-              ],
-            });
-            css = outputFiles?.[0]?.text ?? '';
-          }
+          //     plugins: [
+          //       lessLoader(code, {
+          //         javascriptEnabled: true,
+          //         modifyVars: darkModifyVars,
+          //         filename: path.resolve(id),
+          //         plugins: [lessPlugin(id, config)],
+          //       }),
+          //     ],
+          //   });
+          //   css = outputFiles?.[0]?.text ?? '';
+          // }
 
           const colors = css.match(colorRE);
           if (colors) {
@@ -121,24 +125,26 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
           if (!styleMap.has(id)) {
             let _css = '';
 
-            if (!isLess) {
-              const { css } = await less.render(getCss(processCss), {
-                filename: path.resolve(id),
-              });
-              _css = css;
-            } else {
-              const { outputFiles } = await build({
-                entryPoints: [id],
-                bundle: true,
-                write: false,
-                plugins: [
-                  lessLoader(getCss(processCss), id, {
-                    filename: path.resolve(id),
-                  }),
-                ],
-              });
-              _css = outputFiles?.[0]?.text ?? '';
-            }
+            // if (unSupportEsBuild) {
+            const { css } = await less.render(getCss(processCss), {
+              filename: path.resolve(id),
+              plugins: [lessPlugin(id, config)],
+            });
+            _css = css;
+            // } else {
+            //   const { outputFiles } = await build({
+            //     entryPoints: [id],
+            //     bundle: true,
+            //     write: false,
+            //     plugins: [
+            //       lessLoader(getCss(processCss), {
+            //         filename: path.resolve(id),
+            //         plugins: [lessPlugin(id, config)],
+            //       }),
+            //     ],
+            //   });
+            //   _css = outputFiles?.[0]?.text ?? '';
+            // }
 
             extCssString += `${_css}\n`;
           }

@@ -163,13 +163,15 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
           console.log(
             chalk.cyan('\n✨ [vite-plugin-theme]') + ` - extract css code file is successfully:`
           );
-          const { size } = fs.statSync(path.join(outDir, assetsDir, cssOutputName));
-          console.log(
-            chalk.dim(outDir + '/') +
-              chalk.magentaBright(`${assetsDir}/${cssOutputName}`) +
-              `\t\t${chalk.dim((size / 1024).toFixed(2) + 'kb')}` +
-              '\n'
-          );
+          try {
+            const { size } = fs.statSync(path.join(outDir, assetsDir, cssOutputName));
+            console.log(
+              chalk.dim(outDir + '/') +
+                chalk.magentaBright(`${assetsDir}/${cssOutputName}`) +
+                `\t\t${chalk.dim((size / 1024).toFixed(2) + 'kb')}` +
+                '\n'
+            );
+          } catch (error) {}
         }
       },
     },
