@@ -1,3 +1,12 @@
+## [0.6.4](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.3...v0.6.4) (2021-04-10)
+
+
+### Bug Fixes
+
+* regexp ([6773fd9](https://github.com/vbenjs/vite-plugin-theme/commit/6773fd92bdae3c45a5c7b76726d75c530c3e7d85))
+
+
+
 ## [0.6.3](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.2...v0.6.3) (2021-04-08)
 
 
