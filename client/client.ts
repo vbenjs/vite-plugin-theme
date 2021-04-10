@@ -126,10 +126,10 @@ export async function replaceCssColors(css: string, colors: string[]) {
   colorVariables.forEach(function (color, index) {
     const reg = new RegExp(
       color.replace(/,/g, ',\\s*').replace(/\s/g, '').replace('(', `\\(`).replace(')', `\\)`) +
-        '([\\da-f]{2})?(\\b|\\)|,|\\s)',
+        '([\\da-f]{2})?(\\b|\\)|,|\\s)?',
       'ig'
     );
-    retCss = retCss.replace(reg, colors[index] + '$1$2');
+    retCss = retCss.replace(reg, colors[index] + '$1$2').replace('$1$2', '');
   });
   return retCss;
 }
