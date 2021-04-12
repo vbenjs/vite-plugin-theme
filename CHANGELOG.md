@@ -1,3 +1,12 @@
+# [0.7.0](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.4...v0.7.0) (2021-04-12)
+
+
+### Features
+
+* add loadMethod options ([6425f2f](https://github.com/vbenjs/vite-plugin-theme/commit/6425f2f47a7fc5fa40650e3dbce7735e8851d2e3))
+
+
+
 ## [0.6.4](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.3...v0.6.4) (2021-04-10)
 
 
