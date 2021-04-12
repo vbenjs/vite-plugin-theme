@@ -1,3 +1,17 @@
+## [0.7.1](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.4...v0.7.1) (2021-04-13)
+
+
+### Bug Fixes
+
+* dark-theme public ([5d75f4a](https://github.com/vbenjs/vite-plugin-theme/commit/5d75f4a1cf4212989eb4973e8aa38b004bd8aa35))
+
+
+### Features
+
+* add loadMethod options ([6425f2f](https://github.com/vbenjs/vite-plugin-theme/commit/6425f2f47a7fc5fa40650e3dbce7735e8851d2e3))
+
+
+
 # [0.7.0](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.4...v0.7.0) (2021-04-12)
 
 
