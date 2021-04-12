@@ -1,6 +1,7 @@
 export const globalField = '__VITE_THEME__';
 export const styleTagId = '__VITE_PLUGIN_THEME__';
 export const darkStyleTagId = '__VITE_PLUGIN_DARK_THEME__';
+export const linkID = '__VITE_PLUGIN_THEME-ANTD_DARK_THEME_LINK__';
 
 export interface Options {
   colorVariables: string[];
@@ -31,6 +32,7 @@ declare const __COLOR_PLUGIN_OPTIONS__: Options;
 declare const __COLOR_PLUGIN_OUTPUT_FILE_NAME__: string;
 declare const __ANTD_DARK_PLUGIN_OUTPUT_FILE_NAME__: string;
 declare const __ANTD_DARK_PLUGIN_EXTRACT_CSS__: boolean;
+declare const __ANTD_DARK_PLUGIN_LOAD_LINK__: boolean;
 declare const __PROD__: boolean;
 
 const colorPluginOutputFileName = __COLOR_PLUGIN_OUTPUT_FILE_NAME__;
@@ -107,13 +109,22 @@ export async function replaceStyleVariables({ colorVariables }: { colorVariables
 
 export async function loadDarkThemeCss() {
   const extractCss = __ANTD_DARK_PLUGIN_EXTRACT_CSS__;
+  const isLoadLink = __ANTD_DARK_PLUGIN_LOAD_LINK__;
   if (darkCssIsReady || !extractCss) {
     return;
   }
-  const colorPluginOutputFileName = __ANTD_DARK_PLUGIN_OUTPUT_FILE_NAME__;
-  const cssText = await fetchCss(colorPluginOutputFileName);
-  const styleDom = getStyleDom(darkStyleTagId);
-  appendCssToDom(styleDom, cssText, injectTo);
+  if (isLoadLink) {
+    const linkTag = document.getElementById(linkID);
+    if (linkTag) {
+      linkTag.removeAttribute('disabled');
+      linkTag.setAttribute('rel', 'stylesheet');
+    }
+  } else {
+    const colorPluginOutputFileName = __ANTD_DARK_PLUGIN_OUTPUT_FILE_NAME__;
+    const cssText = await fetchCss(colorPluginOutputFileName);
+    const styleDom = getStyleDom(darkStyleTagId);
+    appendCssToDom(styleDom, cssText, injectTo);
+  }
   darkCssIsReady = true;
 }
 

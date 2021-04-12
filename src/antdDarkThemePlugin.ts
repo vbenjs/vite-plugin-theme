@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import less from 'less';
 import { createFileHash, minifyCSS, extractVariable } from './utils';
 import chalk from 'chalk';
-import { colorRE } from './constants';
+import { colorRE, linkID } from './constants';
 import { injectClientPlugin } from './injectClientPlugin';
 import { lessPlugin } from './preprocessor/less';
 
@@ -16,6 +16,7 @@ export interface AntdDarkThemeOption {
   filter?: (id: string) => boolean;
   extractCss?: boolean;
   preloadFiles?: string[];
+  loadMethod?: 'link' | 'ajax';
 }
 
 export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
@@ -27,6 +28,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
     filter,
     extractCss = true,
     preloadFiles = [],
+    loadMethod = 'link',
   } = options;
   let isServer = false;
   let needSourcemap = false;
@@ -69,6 +71,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
     injectClientPlugin('antdDarkPlugin', {
       antdDarkCssOutputName: cssOutputName,
       antdDarkExtractCss: extractCss,
+      antdDarkLoadLink: loadMethod === 'link',
     }),
     {
       name: 'vite:antd-dark-theme',
@@ -78,6 +81,26 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
         isServer = resolvedConfig.command === 'serve';
         needSourcemap = !!resolvedConfig.build.sourcemap;
         isServer && preloadLess();
+      },
+      transformIndexHtml(html) {
+        if (isServer || loadMethod !== 'link') {
+          return html;
+        }
+        return {
+          html,
+          tags: [
+            {
+              tag: 'link',
+              attrs: {
+                disabled: true,
+                id: linkID,
+                rel: 'alternate stylesheet',
+                href: path.posix.join('/', config.build.assetsDir, cssOutputName),
+              },
+              injectTo: 'body-prepend',
+            },
+          ],
+        };
       },
 
       async transform(code, id) {

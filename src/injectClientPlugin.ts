@@ -15,11 +15,13 @@ export function injectClientPlugin(
     colorPluginCssOutputName,
     antdDarkCssOutputName,
     antdDarkExtractCss,
+    antdDarkLoadLink,
   }: {
     colorPluginOptions?: ViteThemeOptions;
     antdDarkCssOutputName?: string;
     colorPluginCssOutputName?: string;
     antdDarkExtractCss?: boolean;
+    antdDarkLoadLink?: boolean;
   }
 ): Plugin {
   let config: ResolvedConfig;
@@ -90,6 +92,12 @@ export function injectClientPlugin(
           if (typeof antdDarkExtractCss === 'boolean') {
             code = code.replace(
               '__ANTD_DARK_PLUGIN_EXTRACT_CSS__',
+              JSON.stringify(antdDarkExtractCss)
+            );
+          }
+          if (typeof antdDarkLoadLink === 'boolean') {
+            code = code.replace(
+              '__ANTD_DARK_PLUGIN_LOAD_LINK__',
               JSON.stringify(antdDarkExtractCss)
             );
           }

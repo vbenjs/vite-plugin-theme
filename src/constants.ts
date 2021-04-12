@@ -28,3 +28,5 @@ export const ruleRE = /(\w+-)*\w+:/;
 export const cssValueRE = /(\s?[a-z0-9]+\s)*/;
 export const safeEmptyRE = /\s?/;
 export const importSafeRE = /(\s*!important)?/;
+
+export const linkID = '__VITE_PLUGIN_THEME-ANTD_DARK_THEME_LINK__';
