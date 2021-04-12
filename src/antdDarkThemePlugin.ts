@@ -95,7 +95,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
                 disabled: true,
                 id: linkID,
                 rel: 'alternate stylesheet',
-                href: path.posix.join('/', config.build.assetsDir, cssOutputName),
+                href: path.posix.join(config.base, config.build.assetsDir, cssOutputName),
               },
               injectTo: 'body-prepend',
             },
