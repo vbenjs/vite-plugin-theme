@@ -86,7 +86,13 @@ function renderTheme() {
   });
 }
 
-export async function replaceStyleVariables({ colorVariables }: { colorVariables: string[] }) {
+export async function replaceStyleVariables({
+  colorVariables,
+  customCssHandler,
+}: {
+  colorVariables: string[];
+  customCssHandler?: (css: string) => string;
+}) {
   setGlobalOptions('colorVariables', colorVariables);
   const styleIdMap = getGlobalOptions('styleIdMap')!;
   const styleRenderQueueMap = getGlobalOptions('styleRenderQueueMap')!;
@@ -99,7 +105,7 @@ export async function replaceStyleVariables({ colorVariables }: { colorVariables
     try {
       const cssText = await fetchCss(colorPluginOutputFileName);
       const styleDom = getStyleDom(styleTagId);
-      const processCss = await replaceCssColors(cssText, colorVariables);
+      const processCss = await replaceCssColors(cssText, colorVariables, customCssHandler);
       appendCssToDom(styleDom, processCss, injectTo);
     } catch (error) {
       throw new Error(error);
@@ -129,7 +135,11 @@ export async function loadDarkThemeCss() {
 }
 
 // Used to replace css color variables. Note that the order of the two arrays must be the same
-export async function replaceCssColors(css: string, colors: string[]) {
+export async function replaceCssColors(
+  css: string,
+  colors: string[],
+  customCssHandler?: (css: string) => string
+) {
   let retCss: string = css;
   const defaultOptions = getGlobalOptions('defaultOptions');
   const colorVariables = defaultOptions ? defaultOptions.colorVariables || [] : [];
@@ -141,6 +151,9 @@ export async function replaceCssColors(css: string, colors: string[]) {
       'ig'
     );
     retCss = retCss.replace(reg, colors[index] + '$1$2').replace('$1$2', '');
+    if (customCssHandler && typeof customCssHandler === 'function') {
+      retCss = customCssHandler(retCss) || retCss;
+    }
   });
   return retCss;
 }

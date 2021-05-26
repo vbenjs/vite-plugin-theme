@@ -94,7 +94,6 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
         if (!cssLangRE.test(id)) {
           return null;
         }
-
         const getResult = (content: string) => {
           return {
             map: needSourcemap ? this.getCombinedSourcemap() : null,
@@ -130,6 +129,8 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
 
           return getResult(retCode.join('\n'));
         } else {
+          console.log(!styleMap.has(id));
+
           if (!styleMap.has(id)) {
             extCssSet.add(extractCssCodeTemplate);
           }
