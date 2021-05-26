@@ -1,3 +1,19 @@
+# [0.8.0](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.4...v0.8.0) (2021-05-26)
+
+
+### Bug Fixes
+
+* **clean-css:** ensure the normal use of clean-css, fix [#4](https://github.com/vbenjs/vite-plugin-theme/issues/4) ([7aa8c1d](https://github.com/vbenjs/vite-plugin-theme/commit/7aa8c1d6507198542198601c7c647b240c44e440))
+* dark-theme public ([f089eea](https://github.com/vbenjs/vite-plugin-theme/commit/f089eea4857c89360df1dd6efcd98ee3bfb74eb5))
+
+
+### Features
+
+* **client:** add customCssHandler options, fix [#5](https://github.com/vbenjs/vite-plugin-theme/issues/5) ([433ab05](https://github.com/vbenjs/vite-plugin-theme/commit/433ab055be9116df4996e92cdda9cc9239fded88))
+* add loadMethod options ([d6cf1c8](https://github.com/vbenjs/vite-plugin-theme/commit/d6cf1c8d0c338a7475762d8cff27ae5d0fb28bc9))
+
+
+
 ## [0.7.1](https://github.com/vbenjs/vite-plugin-theme/compare/v0.6.4...v0.7.1) (2021-04-13)
 
 
