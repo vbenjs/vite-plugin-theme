@@ -2,6 +2,7 @@ import { ResolvedConfig } from 'vite';
 import { createHash } from 'crypto';
 import { ResolveSelector } from '.';
 import { commentRE, cssBlockRE, ruleRE, cssValueRE, safeEmptyRE, importSafeRE } from './constants';
+import CleanCSS from 'clean-css';
 export function getVariablesReg(colors: string[]) {
   return new RegExp(
     colors
@@ -44,9 +45,7 @@ export function createFileHash() {
 /**
  * Compress the generated code
  */
-let CleanCSS: any;
 export async function minifyCSS(css: string, config: ResolvedConfig) {
-  CleanCSS = CleanCSS || (await import('clean-css'));
   const res = new CleanCSS({
     rebase: false,
     ...config.build.cleanCssOptions,
