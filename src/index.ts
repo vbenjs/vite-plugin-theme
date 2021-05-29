@@ -129,8 +129,6 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
 
           return getResult(retCode.join('\n'));
         } else {
-          console.log(!styleMap.has(id));
-
           if (!styleMap.has(id)) {
             extCssSet.add(extractCssCodeTemplate);
           }
