@@ -39,6 +39,8 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
   const codeCache = new Map<string, { code: string; css: string }>();
 
   const cssOutputName = `${fileName}.${createFileHash()}.css`;
+  
+  const hrefProtocals = [ 'http://' ];
 
   const getCss = (css: string) => {
     return `[${selector || 'data-theme="dark"'}] {${css}}`;
@@ -67,6 +69,18 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
     }
   }
 
+  function getProtocal(path): string | undefined {
+    let protocal:string | undefined;
+
+    hrefProtocals.forEach(hrefProtocal => {
+      if(path.startsWith(hrefProtocal)){
+        protocal = hrefProtocal;
+      }
+    })
+
+    return protocal;
+  }
+
   return [
     injectClientPlugin('antdDarkPlugin', {
       antdDarkCssOutputName: cssOutputName,
@@ -83,9 +97,20 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
         isServer && preloadLess();
       },
       transformIndexHtml(html) {
+        let href;
+        const protocal = getProtocal(config.base);
+
         if (isServer || loadMethod !== 'link') {
           return html;
         }
+
+        if(protocal) {
+          href = protocal + path.posix.join(config.base.slice(protocal.length), config.build.assetsDir, cssOutputName);
+        }
+        else {
+          href = path.posix.join(config.base, config.build.assetsDir, cssOutputName)
+        }
+
         return {
           html,
           tags: [
@@ -95,7 +120,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
                 disabled: true,
                 id: linkID,
                 rel: 'alternate stylesheet',
-                href: path.posix.join(config.base, config.build.assetsDir, cssOutputName),
+                href: href,
               },
               injectTo: 'head-prepend',
             },
