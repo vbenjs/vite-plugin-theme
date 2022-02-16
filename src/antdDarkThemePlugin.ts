@@ -122,7 +122,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
                 rel: 'alternate stylesheet',
                 href: href,
               },
-              injectTo: 'head-prepend',
+              injectTo: 'head',
             },
           ],
         };
