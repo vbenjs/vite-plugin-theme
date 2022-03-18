@@ -62,7 +62,7 @@ export default defineConfig({
 
 ## Sample project
 
-[Vben Admin](https://github.com/anncwb/vue-vben-admin)
+[Vben Admin](https://github.com/vbenjs/vue-vben-admin)
 
 ## Reference project
 
