@@ -22,6 +22,7 @@ export interface GlobalConfig {
 }
 
 export type InjectTo = 'head' | 'body' | 'body-prepend';
+export const isServer = typeof window === 'undefined';
 
 declare global {
   interface Window {
@@ -45,6 +46,7 @@ const debounceThemeRender = debounce(200, renderTheme);
 export let darkCssIsReady = false;
 
 (() => {
+  if (isServer) return;
   if (!window[globalField]) {
     window[globalField] = {
       styleIdMap: new Map(),
@@ -59,6 +61,7 @@ export let darkCssIsReady = false;
 })();
 
 export function addCssToQueue(id: string, styleString: string) {
+  if (isServer) return;
   const styleIdMap = getGlobalOptions('styleIdMap')!;
 
   if (!styleIdMap.get(id)) {
@@ -68,6 +71,7 @@ export function addCssToQueue(id: string, styleString: string) {
 }
 
 function renderTheme() {
+  if (isServer) return;
   const variables = getGlobalOptions('colorVariables')!;
   if (!variables) {
     return;
@@ -75,15 +79,19 @@ function renderTheme() {
   const styleRenderQueueMap = getGlobalOptions('styleRenderQueueMap')!;
 
   const styleDom = getStyleDom(styleTagId);
-  let html = styleDom.innerHTML;
-  for (let [id, css] of styleRenderQueueMap.entries()) {
-    html += css;
-    window[globalField].styleRenderQueueMap!.delete(id);
-    window[globalField].styleIdMap!.set(id, css);
+  if (styleDom) {
+    let html = styleDom.innerHTML;
+    for (let [id, css] of styleRenderQueueMap.entries()) {
+      html += css;
+      window[globalField].styleRenderQueueMap!.delete(id);
+      window[globalField].styleIdMap!.set(id, css);
+    }
+    replaceCssColors(html, variables).then((processCss) => {
+      if (processCss) {
+        appendCssToDom(styleDom, processCss, injectTo);
+      }
+    });
   }
-  replaceCssColors(html, variables).then((processCss) => {
-    appendCssToDom(styleDom, processCss, injectTo);
-  });
 }
 
 export async function replaceStyleVariables({
@@ -93,6 +101,7 @@ export async function replaceStyleVariables({
   colorVariables: string[];
   customCssHandler?: (css: string) => string;
 }) {
+  if (isServer) return;
   setGlobalOptions('colorVariables', colorVariables);
   const styleIdMap = getGlobalOptions('styleIdMap')!;
   const styleRenderQueueMap = getGlobalOptions('styleRenderQueueMap')!;
@@ -106,7 +115,9 @@ export async function replaceStyleVariables({
       const cssText = await fetchCss(colorPluginOutputFileName);
       const styleDom = getStyleDom(styleTagId);
       const processCss = await replaceCssColors(cssText, colorVariables, customCssHandler);
-      appendCssToDom(styleDom, processCss, injectTo);
+      if (styleDom && processCss) {
+        appendCssToDom(styleDom, processCss, injectTo);
+      }
     } catch (error) {
       throw new Error(error);
     }
@@ -114,6 +125,7 @@ export async function replaceStyleVariables({
 }
 
 export async function loadDarkThemeCss() {
+  if (isServer) return;
   const extractCss = __ANTD_DARK_PLUGIN_EXTRACT_CSS__;
   const isLoadLink = __ANTD_DARK_PLUGIN_LOAD_LINK__;
   if (darkCssIsReady || !extractCss) {
@@ -126,10 +138,11 @@ export async function loadDarkThemeCss() {
       linkTag.setAttribute('rel', 'stylesheet');
     }
   } else {
-    const colorPluginOutputFileName = __ANTD_DARK_PLUGIN_OUTPUT_FILE_NAME__;
-    const cssText = await fetchCss(colorPluginOutputFileName);
+    const cssText = await fetchCss(__ANTD_DARK_PLUGIN_OUTPUT_FILE_NAME__);
     const styleDom = getStyleDom(darkStyleTagId);
-    appendCssToDom(styleDom, cssText, injectTo);
+    if (styleDom) {
+      appendCssToDom(styleDom, cssText, injectTo);
+    }
   }
   darkCssIsReady = true;
 }
@@ -140,6 +153,7 @@ export async function replaceCssColors(
   colors: string[],
   customCssHandler?: (css: string) => string
 ) {
+  if (isServer) return;
   let retCss: string = css;
   const defaultOptions = getGlobalOptions('defaultOptions');
   const colorVariables = defaultOptions ? defaultOptions.colorVariables || [] : [];
@@ -162,14 +176,17 @@ export function setGlobalOptions<T extends keyof GlobalConfig = any>(
   key: T,
   value: GlobalConfig[T]
 ) {
+  if (isServer) return;
   window[globalField][key] = value;
 }
 
-export function getGlobalOptions<T extends keyof GlobalConfig = any>(key: T): GlobalConfig[T] {
+export function getGlobalOptions<T extends keyof GlobalConfig = any>(key: T): GlobalConfig[T] | undefined {
+  if (isServer) return;
   return window[globalField][key];
 }
 
 export function getStyleDom(id: string) {
+  if (isServer) return;
   let style = document.getElementById(id);
   if (!style) {
     style = document.createElement('style');
@@ -183,6 +200,7 @@ export async function appendCssToDom(
   cssText: string,
   appendTo: InjectTo = 'body'
 ) {
+  if (isServer) return;
   styleDom.innerHTML = cssText;
   if (appendTo === 'head') {
     document.head.appendChild(styleDom);
@@ -225,6 +243,7 @@ function fetchCss(fileName: string): Promise<string> {
 }
 
 function debounce(delay: number, fn: (...arg: any[]) => any) {
+  if (isServer) return (...args) => { console.warn(args) };
   let timer;
   return function (...args) {
     // @ts-ignore
