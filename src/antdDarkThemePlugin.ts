@@ -39,7 +39,7 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
   const codeCache = new Map<string, { code: string; css: string }>();
 
   const cssOutputName = `${fileName}.${createFileHash()}.css`;
-  
+
   const hrefProtocals = [ 'http://' ];
 
   const getCss = (css: string) => {
@@ -190,8 +190,9 @@ export function antdDarkThemePlugin(options: AntdDarkThemeOption): Plugin[] {
         }
         const {
           root,
-          build: { outDir, assetsDir, minify },
+          build: { outDir, assetsDir, minify, ssr },
         } = config;
+        if (ssr) { return; }
         if (minify) {
           extCssString = await minifyCSS(extCssString, config);
         }
