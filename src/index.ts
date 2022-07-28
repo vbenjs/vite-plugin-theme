@@ -141,8 +141,9 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
       async writeBundle() {
         const {
           root,
-          build: { outDir, assetsDir, minify },
+          build: { outDir, assetsDir, minify, ssr },
         } = config;
+        if (ssr) { return; }
         let extCssString = '';
         for (const css of extCssSet) {
           extCssString += css;
