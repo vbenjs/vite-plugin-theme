@@ -22,6 +22,7 @@ export interface ViteThemeOptions {
   fileName?: string;
   injectTo?: InjectTo;
   verbose?: boolean;
+  isProd: boolean; // 必须传递环境标识
 }
 
 import { createFileHash, formatCss } from './utils';
@@ -49,6 +50,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
       fileName: 'app-theme-style',
       injectTo: 'body',
       verbose: true,
+      isProd: true, // 默认为 true，切换主题只在生产环境生效。
     },
     opt
   );
@@ -81,7 +83,7 @@ export function viteThemePlugin(opt: ViteThemeOptions): Plugin[] {
     }),
     {
       ...emptyPlugin,
-      enforce: 'post',
+      enforce: options.isProd ? undefined : 'post', // 生产环境不设置 enforce；开发环境设置为 post，切换主题才会都生效。
       configResolved(resolvedConfig) {
         config = resolvedConfig;
         isServer = resolvedConfig.command === 'serve';
